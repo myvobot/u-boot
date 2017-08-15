@@ -9,3 +9,10 @@
 .tmp_config
 /scripts
 /httpd/fsdata.c
+/.git/
+tools/mkimage
+
+*.map
+u-boot
+u-boot.srec
+.depend

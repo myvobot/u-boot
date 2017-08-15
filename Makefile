@@ -48,6 +48,9 @@ ifeq ($(MT7621_MP), y)
 CONFIG_CROSS_COMPILER_PATH ?= /opt/mips-2012.03/bin/
 else
 CONFIG_CROSS_COMPILER_PATH ?= /opt/buildroot-gcc342/bin
+# CONFIG_CROSS_COMPILER_PATH ?= /opt/mipsel-gcc472-glibc216-mips32/bin
+# CONFIG_CROSS_COMPILER_PATH ?= /opt/openwrt_mt7688/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin
+
 endif
 
 ifeq (include/config.mk,$(wildcard include/config.mk))
