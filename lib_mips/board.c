@@ -125,6 +125,8 @@ static char  file_name_space[ARGV_LEN];
         ".set\tpop"                                             \
         : "=r" (__res));                                        \
         __res;})
+//add by Roger
+void vobot_gpio_init(void);
 //added by mango
 void gpio_init(void);
 void led_on(void);
@@ -535,9 +537,9 @@ static int init_func_ram (void)
 
 static int display_banner(void)
 {
-   
+
 	printf ("\n\n%s\n\n", version_string);
-	printf ("\n\nWidora by mango,V1.0.5\n\n");
+	printf ("\nVOBOT by Roger, V1.2.0\n");
 	return (0);
 }
 
@@ -1944,6 +1946,8 @@ void board_init_r (gd_t *id, ulong dest_addr)
 #endif
 	LANWANPartition();
 
+	vobot_gpio_init();
+
 #ifdef DUAL_IMAGE_SUPPORT
 	check_image_validation();
 #endif
@@ -1954,6 +1958,7 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	    timer1 = s ? (int)simple_strtol(s, NULL, 10) : CONFIG_BOOTDELAY;
 	}
 /*web failsafe*/
+#if _ENABLE_WEB_FAILSAFE
 	gpio_init();
 	printf( "\nif you press the WPS button for more than 2 seconds will automatically enter the Update mode,more than 7 seconds enter gpio test mode\n");
 	int counter = 0;
@@ -1981,12 +1986,13 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	} else {
 		printf( "\n\nContinuing normal boot...\n\n");
 	}
-/*failsafe end!*/
-	OperationSelect();   
+	/*failsafe end!*/
+#endif //_ENABLE_WEB_FAILSAFE
+	OperationSelect();
 	while (timer1 > 0) {
 		--timer1;
-		/* delay 100 * 10ms */
-		for (i=0; i<100; ++i) {
+		/* delay 10 * 10ms */
+		for (i=0; i<10; ++i) {
 			if ((my_tmp = tstc()) != 0) {	/* we got a key press	*/
 				timer1 = 0;	/* no more delay	*/
 				BootType = getc();
@@ -2854,7 +2860,7 @@ static int watchdog_reset()
 void disable_pcie(void)
 {
 	u32 val;
-	
+
 	val = RALINK_REG(RT2880_RSTCTRL_REG);    // assert RC RST
 	val |= RALINK_PCIE0_RST;
 	RALINK_REG(RT2880_RSTCTRL_REG) = val;
@@ -2865,13 +2871,54 @@ void disable_pcie(void)
 	RALINK_REG(RT2880_CLKCFG1_REG) = val;
 #endif
 }
+//add by Roger 20161231
+void vobot_gpio_init(void)
+{
+	u32 val;
+	printf( "\nVOBOT GPIO init : nOE(#18) AMP(#15)\n" );
+	/* set GPIO #18 to GPIO mode */
+
+	// EPHY_APGIO_AIO_EN[4:1]  = 4'b1111
+	// 1000003C AGPIO_CFG Analog GPIO Configuration
+	val = RALINK_REG(RT2880_AGPIOCFG_REG);
+	val |= 0x1E0000;
+	RALINK_REG(RT2880_AGPIOCFG_REG) = val;
+
+	// AND PWM0_MODE = 2'b01
+	// 			2'b00: PWM_CH0
+	// 			2'b01: GPIO#18
+	// pwm0_gpio_psel[2:0]
+	// 10000060 GPIO1_MODE GPIO1 purpose selection
+	// 29:28 PWM0_MODE PWM0 GPIO mode
+	val = RALINK_REG(RT2880_GPIOMODE_REG);
+	// for GPIO #18   // set gpio1_mode 29:28=2'b01
+	val |= 1<<28;
+	val &= ~(1<<29);
+	// for GPIO #15   //Set SPI Slave GPIO mode to b'01, bit[3:2]
+	val |= 1<<2;
+	val &= ~(1<<3);
+	RALINK_REG(RT2880_GPIOMODE_REG) = val;
+
+	/* set GPIO #18 to low */
+	/* set GPIO #15 to low */
+	// 10000600 GPIO_CTRL_0
+	val = RALINK_REG(RT2880_REG_PIODIR);
+	val |= 1<<18;
+	val |= 1<<15;
+	RALINK_REG(RT2880_REG_PIODIR) = val;
+	// 10000620 GPIO_DATA_0
+	val = RALINK_REG(RT2880_REG_PIODATA);
+	val &= ~(1<<18);
+	val &= ~(1<<15);
+	RALINK_REG(RT2880_REG_PIODATA) = val;
+}
 //added by mango 20160120
 //wled_n GPIO44 WLAN_AN_MODE 2b01
 //WDT GPIO38 WDT_MODE 1b1
 void gpio_init(void)
 {
 	u32 val;
-	printf( "MT7688 gpio init : wled and wdt by mango\n" );
+	printf( "\nMT7688 GPIO init : WLED and WDT\n" );
 	//set gpio2_mode 1:0=2b01 wled,p1,p2,p3,p4 is gpio.p0 is ephy
 	val = 0x551;
 	RALINK_REG(RT2880_SYS_CNTL_BASE+0x64)=val;
