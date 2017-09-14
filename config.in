@@ -1508,6 +1508,10 @@ fi
 
 bool "Dual Image" DUAL_IMAGE_SUPPORT
 
+if [ "$DUAL_IMAGE_SUPPORT" = "y" ]; then
+  bool "VOBOT Failsafe Image" FAILSAFE_IMAGE_SUPPORT
+fi
+
 bool "Partition LAN/WAN" LAN_WAN_PARTITION
 if [ "$LAN_WAN_PARTITION" = "y" ]; then
  choice 'LAN/WAN Board Layout' "W/LLLL RALINK_DEMO_BOARD_PVLAN \

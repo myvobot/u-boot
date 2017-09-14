@@ -198,6 +198,11 @@ extern unsigned int  CFG_BLOCKSIZE;
 /*-----------------------------------------------------------------------
  * FLASH and environment organization
  */
+
+#ifdef FAILSAFE_IMAGE_SUPPORT
+    #define FAILSAFE_IMAGE_SIZE  0x280000 /* 2.5MB for Vobot failsafe image */
+#endif
+
 #define CFG_MAX_FLASH_BANKS	1	/* max number of memory banks */
 #define CFG_MAX_FLASH_SECT	(263)	/* max number of sectors on one chip */
 
@@ -250,7 +255,11 @@ extern unsigned int  CFG_BLOCKSIZE;
   #elif defined (ON_BOARD_8M_FLASH_COMPONENT)
   #define PHYS_FLASH2_1		0xBC400000 /* Flash Bank #2 */
   #elif defined (ON_BOARD_16M_FLASH_COMPONENT)
-  #define PHYS_FLASH2_1		0xBC800000 /* Flash Bank #2 */
+    #ifdef FAILSAFE_IMAGE_SUPPORT
+      #define PHYS_FLASH2_1   (PHYS_FLASH_START + 0x1000000 - FAILSAFE_IMAGE_SIZE) /* Flash Bank #2, for VOBOT, 0xBCD80000 */
+    #else
+      #define PHYS_FLASH2_1		0xBC800000 /* Flash Bank #2 */
+    #endif //FAILSAFE_IMAGE_SUPPORT
   #elif defined (ON_BOARD_32M_FLASH_COMPONENT)
   #define PHYS_FLASH2_1		0xBD000000 /* Flash Bank #2 */
   #endif
@@ -340,7 +349,11 @@ extern unsigned int  CFG_BLOCKSIZE;
 #define CFG_FACTORY_ADDR	(CFG_FLASH_BASE + CFG_BOOTLOADER_SIZE + CFG_CONFIG_SIZE)
 #define CFG_KERN_ADDR		(CFG_FLASH_BASE + (CFG_BOOTLOADER_SIZE + CFG_CONFIG_SIZE + CFG_FACTORY_SIZE))
 #ifdef DUAL_IMAGE_SUPPORT
-#define CFG_KERN2_ADDR		(CFG_FLASH2_BASE + (CFG_BOOTLOADER_SIZE + CFG_CONFIG_SIZE + CFG_FACTORY_SIZE))
+  #ifdef FAILSAFE_IMAGE_SUPPORT
+    #define CFG_KERN2_ADDR    (CFG_FLASH2_BASE) /* ignore the bootloader / jffs2 parts */
+  #else
+    #define CFG_KERN2_ADDR		(CFG_FLASH2_BASE + (CFG_BOOTLOADER_SIZE + CFG_CONFIG_SIZE + CFG_FACTORY_SIZE))
+  #endif //FAILSAFE_IMAGE_SUPPORT
 #endif
 #endif
 
@@ -364,9 +377,17 @@ extern unsigned int  CFG_BLOCKSIZE;
 #elif defined (ON_BOARD_8M_FLASH_COMPONENT)
 #define CFG_KERN_SIZE		(0x400000 - (CFG_BOOTLOADER_SIZE + CFG_CONFIG_SIZE + CFG_FACTORY_SIZE))
 #elif defined (ON_BOARD_16M_FLASH_COMPONENT)
-#define CFG_KERN_SIZE		(0x800000 - (CFG_BOOTLOADER_SIZE + CFG_CONFIG_SIZE + CFG_FACTORY_SIZE))
+  #ifdef FAILSAFE_IMAGE_SUPPORT
+    #define CFG_KERN_SIZE   (0x1000000 - (FAILSAFE_IMAGE_SIZE + CFG_BOOTLOADER_SIZE + CFG_CONFIG_SIZE + CFG_FACTORY_SIZE))
+  #else
+    #define CFG_KERN_SIZE		(0x800000 - (CFG_BOOTLOADER_SIZE + CFG_CONFIG_SIZE + CFG_FACTORY_SIZE))
+  #endif //FAILSAFE_IMAGE_SUPPORT
 #endif
-#define CFG_KERN2_SIZE		CFG_KERN_SIZE
+#ifdef FAILSAFE_IMAGE_SUPPORT
+  #define CFG_KERN2_SIZE		FAILSAFE_IMAGE_SIZE
+#else
+  #define CFG_KERN2_SIZE    CFG_KERN_SIZE
+#endif
 #else // Non Dual Image
 #if defined (ON_BOARD_2M_FLASH_COMPONENT)
 #define CFG_KERN_SIZE		(0x200000 - (CFG_BOOTLOADER_SIZE + CFG_CONFIG_SIZE + CFG_FACTORY_SIZE))

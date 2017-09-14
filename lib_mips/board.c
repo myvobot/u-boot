@@ -539,7 +539,7 @@ static int display_banner(void)
 {
 
 	printf ("\n\n%s\n\n", version_string);
-	printf ("\nVOBOT by Roger, V1.2.0\n");
+	printf ("\nVOBOT by Roger, V1.3.0 dual\n");
 	return (0);
 }
 
@@ -1048,19 +1048,30 @@ int copy_image(int dir, unsigned long image_size)
 	}
 	else if (dir == 2) {
 #if defined (CFG_ENV_IS_IN_NAND)
-		printf("\nCopy Image:\nImage2(0x%X) to Image1(0x%X), size=0x%X\n",
+		printf("\nCopy Image:\nImage2(0x%X) to Image1(0x%X), size=0x%X (NAND)\n",
 				CFG_KERN2_ADDR - CFG_FLASH_BASE,
 				CFG_KERN_ADDR - CFG_FLASH_BASE, image_size);
 		ranand_read((char *)CFG_SPINAND_LOAD_ADDR, CFG_KERN2_ADDR-CFG_FLASH_BASE, image_size);
 		ret = ranand_erase_write((char *)CFG_SPINAND_LOAD_ADDR, CFG_KERN_ADDR-CFG_FLASH_BASE, image_size);
 #elif defined (CFG_ENV_IS_IN_SPI)
-		printf("\nCopy Image:\nImage2(0x%X) to Image1(0x%X), size=0x%X\n",
+		printf("\nCopy Image:\nImage2(0x%X) to Image1(0x%X), size=0x%X (SPI)\n",
 				CFG_KERN2_ADDR - CFG_FLASH_BASE,
 				CFG_KERN_ADDR - CFG_FLASH_BASE, image_size);
 		raspi_read((char *)CFG_SPINAND_LOAD_ADDR, CFG_KERN2_ADDR-CFG_FLASH_BASE, image_size);
 		ret = raspi_erase_write((char *)CFG_SPINAND_LOAD_ADDR, CFG_KERN_ADDR-CFG_FLASH_BASE, image_size);
+
+		#ifdef FAILSAFE_IMAGE_SUPPORT
+			printf("create jffs2 start mark");
+			char buf[4];
+			buf[0] = 0xde;
+			buf[1] = 0xad;
+			buf[2] = 0xc0;
+			buf[3] = 0xde;
+			int ret_jffs2 = raspi_erase_write(buf, CFG_KERN_ADDR-CFG_FLASH_BASE + image_size, 4);
+			printf("offs:%x ret=%d\n", CFG_KERN_ADDR-CFG_FLASH_BASE + image_size, ret_jffs2);
+		#endif
 #else //CFG_ENV_IS_IN_FLASH
-		printf("\nCopy Image:\nImage2(0x%X) to Image1(0x%X), size=0x%X\n", CFG_KERN2_ADDR, CFG_KERN_ADDR, image_size);
+		printf("\nCopy Image:\nImage2(0x%X) to Image1(0x%X), size=0x%X\n (FLASH)", CFG_KERN2_ADDR, CFG_KERN_ADDR, image_size);
 #if defined (ON_BOARD_16M_FLASH_COMPONENT) && (defined (RT2880_ASIC_BOARD) || defined (RT2880_FPGA_BOARD) || defined (RT3052_MP1))
 		len = 0x400000 - (CFG_BOOTLOADER_SIZE + CFG_CONFIG_SIZE + CFG_FACTORY_SIZE);
 		if (image_size <= len) {
@@ -1246,7 +1257,7 @@ int check_image_validation(void)
 	printf("Image1 Stable Flag --> %s\n", !strcmp(stable, "1") ? "Stable" : "Not stable");
 	try = getenv("Image1Try");
 	printf("Image1 Try Counter --> %s\n", (try == NULL) ? "0" : try);
-	if ((strcmp(stable, "1") != 0) && (simple_strtoul(try, NULL, 10)) > MAX_TRY_TIMES 
+	if ((strcmp(stable, "1") != 0) && (simple_strtoul(try, NULL, 10)) > MAX_TRY_TIMES
 		&& (broken1 == 0)) {
 		printf("\nImage1 is not stable and try counter > %X. Take it as a broken image.", MAX_TRY_TIMES);
 		broken1 = 1;
@@ -1260,6 +1271,10 @@ int check_image_validation(void)
 				\nGive up copying image.\n", len, CFG_KERN_SIZE);
 		else {
 			printf("Image1 is borken. Copy Image2 to Image1\n");
+#ifdef FAILSAFE_IMAGE_SUPPORT
+			printf("kernel size: %X, however, we copy rootfs as well, total = (%X)", len, CFG_KERN2_SIZE);
+			len = CFG_KERN2_SIZE;
+#endif
 			copy_image(2, len);
 		}
 	}
@@ -1270,7 +1285,11 @@ int check_image_validation(void)
 				\nGive up copying image.\n", len, CFG_KERN2_SIZE);
 		else {
 			printf("\nImage2 is borken. Copy Image1 to Image2.\n");
+#ifdef FAILSAFE_IMAGE_SUPPORT
+			printf("***** Vobot don't need copy 1 to 2 *****");
+#else
 			copy_image(1, len);
+#endif
 		}
 	}
 	else if (broken1 == 1 && broken2 == 1)
