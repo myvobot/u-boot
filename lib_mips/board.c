@@ -1060,7 +1060,7 @@ int copy_image(int dir, unsigned long image_size)
 		raspi_read((char *)CFG_SPINAND_LOAD_ADDR, CFG_KERN2_ADDR-CFG_FLASH_BASE, image_size);
 		ret = raspi_erase_write((char *)CFG_SPINAND_LOAD_ADDR, CFG_KERN_ADDR-CFG_FLASH_BASE, image_size);
 
-		#ifdef FAILSAFE_IMAGE_SUPPORT
+		#ifdef RECOVERY_IMAGE_SUPPORT
 			printf("create jffs2 start mark");
 			char buf[4];
 			buf[0] = 0xde;
@@ -1271,7 +1271,7 @@ int check_image_validation(void)
 				\nGive up copying image.\n", len, CFG_KERN_SIZE);
 		else {
 			printf("Image1 is borken. Copy Image2 to Image1\n");
-#ifdef FAILSAFE_IMAGE_SUPPORT
+#ifdef RECOVERY_IMAGE_SUPPORT
 			printf("kernel size: %X, however, we copy rootfs as well, total = (%X)", len, CFG_KERN2_SIZE);
 			len = CFG_KERN2_SIZE;
 #endif
@@ -1284,8 +1284,8 @@ int check_image_validation(void)
 			printf("\nImage2 is broken, but Image1 size(0x%X) is too big(limit=0x%X)!!\
 				\nGive up copying image.\n", len, CFG_KERN2_SIZE);
 		else {
-			printf("\nImage2 is borken. Copy Image1 to Image2.\n");
-#ifdef FAILSAFE_IMAGE_SUPPORT
+			printf("\nImage2 is broken. Copy Image1 to Image2.\n");
+#ifdef RECOVERY_IMAGE_SUPPORT
 			printf("***** Vobot don't need copy 1 to 2 *****");
 #else
 			copy_image(1, len);

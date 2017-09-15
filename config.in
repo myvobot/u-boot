@@ -1509,7 +1509,7 @@ fi
 bool "Dual Image" DUAL_IMAGE_SUPPORT
 
 if [ "$DUAL_IMAGE_SUPPORT" = "y" ]; then
-  bool "VOBOT Failsafe Image" FAILSAFE_IMAGE_SUPPORT
+  bool "VOBOT Recovery Image" RECOVERY_IMAGE_SUPPORT
 fi
 
 bool "Partition LAN/WAN" LAN_WAN_PARTITION
