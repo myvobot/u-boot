@@ -539,7 +539,7 @@ static int display_banner(void)
 {
 
 	printf ("\n\n%s\n\n", version_string);
-	printf ("\nVOBOT by Roger, V1.3.0 dual\n");
+	printf ("\nVOBOT by Roger, V1.4 (dual)\n");
 	return (0);
 }
 
@@ -1256,10 +1256,10 @@ int check_image_validation(void)
 	stable = getenv("Image1Stable");
 	printf("Image1 Stable Flag --> %s\n", !strcmp(stable, "1") ? "Stable" : "Not stable");
 	try = getenv("Image1Try");
-	printf("Image1 Try Counter --> %s\n", (try == NULL) ? "0" : try);
-	if ((strcmp(stable, "1") != 0) && (simple_strtoul(try, NULL, 10)) > MAX_TRY_TIMES
-		&& (broken1 == 0)) {
-		printf("\nImage1 is not stable and try counter > %X. Take it as a broken image.", MAX_TRY_TIMES);
+	printf("Image1 Try Counter --> %s\n", (try == NULL) ? "NULL" : try);
+	int tryi = try?simple_strtoul(try, NULL, 10):0;
+	if ((strcmp(stable, "1") != 0) && (tryi > MAX_TRY_TIMES) && (broken1 == 0)) {
+		printf("\nImage1 is not stable and try counter %d > %X. Take it as a broken image.", tryi, MAX_TRY_TIMES);
 		broken1 = 1;
 	}
 
@@ -1284,10 +1284,12 @@ int check_image_validation(void)
 			printf("\nImage2 is broken, but Image1 size(0x%X) is too big(limit=0x%X)!!\
 				\nGive up copying image.\n", len, CFG_KERN2_SIZE);
 		else {
-			printf("\nImage2 is broken. Copy Image1 to Image2.\n");
 #ifdef RECOVERY_IMAGE_SUPPORT
-			printf("***** Vobot don't need copy 1 to 2 *****");
+			printf("\nImage2 is broken. run firmware will rebuild it\n");
+			setenv("Image2Stable", "0");
+			saveenv();
 #else
+			printf("\nImage2 is broken. Copy Image1 to Image2.\n");
 			copy_image(1, len);
 #endif
 		}
