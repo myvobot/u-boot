@@ -127,7 +127,7 @@
 #define IH_COMP_XZ		5	/* xz    Compression Used       */
 
 #define IH_MAGIC	0x27051956	/* Image Magic Number		*/
-#define IH_NMLEN		32	/* Image Name Length		*/
+#define IH_NMLEN		24	/* Image Name Length. changed from 32 to 24	*/
 
 /*
  * all data in network byte order (aka natural aka bigendian)
@@ -146,6 +146,8 @@ typedef struct image_header {
 	uint8_t		ih_type;	/* Image Type			*/
 	uint8_t		ih_comp;	/* Compression Type		*/
 	uint8_t		ih_name[IH_NMLEN];	/* Image Name		*/
+	uint32_t    ih_rootfssize; /* Rootfs (squashfs) Size */
+	uint32_t    ih_rootfscrc;  /* Rootfs (squashfs) Checksum */
 } image_header_t;
 
 

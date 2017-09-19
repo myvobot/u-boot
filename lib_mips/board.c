@@ -539,7 +539,7 @@ static int display_banner(void)
 {
 
 	printf ("\n\n%s\n\n", version_string);
-	printf ("\nVOBOT by Roger, V1.4 (dual)\n");
+	printf ("\nVOBOT by Roger, V1.6 (dual)\n");
 	return (0);
 }
 
@@ -1155,6 +1155,11 @@ int check_image_validation(void)
 	printf("\n=================================================\n");
 	printf("Check image validation:\n");
 
+	stable = getenv("Image1Stable");
+
+	uint32_t squashfs_chksum = ntohl(hdr1.ih_rootfscrc);
+	//printf("squashfs chksum=%X\n", squashfs_chksum);
+
 	/* Check header magic number */
 	printf ("Image1 Header Magic Number --> ");
 	if (ntohl(hdr1.ih_magic) != IH_MAGIC) {
@@ -1179,6 +1184,7 @@ int check_image_validation(void)
 		len  = sizeof(image_header_t);
 		chksum = ntohl(hdr1.ih_hcrc);
 		hdr1.ih_hcrc = 0;
+		//printf("header chksum=%X vs. chksum=%X\n", crc32(0, (char *)&hdr1, len), chksum);
 		if (crc32(0, (char *)&hdr1, len) != chksum) {
 			broken1 = 1;
 			printf("Failed\n");
@@ -1225,8 +1231,31 @@ int check_image_validation(void)
 		}
 		else
 			printf("OK\n");
+		//printf("len: 0x%X; chksum: 0x%X\n", len, chksum);
+#if defined (CFG_ENV_IS_IN_SPI) && defined (RECOVERY_IMAGE_SUPPORT)
+		//only calculate checksum if not stable
+		if (strcmp(stable, "1") != 0) {
+			printf("Image1 Root FS Checksum --> ");
+			unsigned long rootfs_size =  ntohl(hdr1.ih_rootfssize);
+			if (rootfs_size > 0xE00000 || rootfs_size < 0x100000) { //between 1M to 14M
+				printf("rootfs size invalid (0x%X)\n", rootfs_size);
+			} else {
+				raspi_read((char *)CFG_SPINAND_LOAD_ADDR,
+						(unsigned int)hdr1_addr - CFG_FLASH_BASE + sizeof(image_header_t) + len,
+						rootfs_size);
+				unsigned long rootfs_chksum = crc32(0, (char *)CFG_SPINAND_LOAD_ADDR, rootfs_size);
+				//printf("rootfs len: 0x%X chksum: 0x%X\n", rootfs_size, rootfs_chksum);
+				if (rootfs_chksum != squashfs_chksum) {
+					broken1 = 1;
+					printf("Failed (rootfs_chksum=0x%X vs. squashfs_chksum=0x%X)\n", rootfs_chksum, squashfs_chksum);
+				} else
+					printf("OK\n");
+			}
+		}
+#endif
 	}
 
+#if !defined (RECOVERY_IMAGE_SUPPORT)
 	if (broken2 == 0) {
 		printf("Image2 Data Checksum --> ");
 		len  = ntohl(hdr2.ih_size);
@@ -1251,9 +1280,10 @@ int check_image_validation(void)
 		else
 			printf("OK\n");
 	}
+#endif
 
 	/* Check stable flag and try counter */
-	stable = getenv("Image1Stable");
+	//stable = getenv("Image1Stable");
 	printf("Image1 Stable Flag --> %s\n", !strcmp(stable, "1") ? "Stable" : "Not stable");
 	try = getenv("Image1Try");
 	printf("Image1 Try Counter --> %s\n", (try == NULL) ? "NULL" : try);
