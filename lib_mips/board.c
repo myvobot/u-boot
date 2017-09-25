@@ -539,7 +539,7 @@ static int display_banner(void)
 {
 
 	printf ("\n\n%s\n\n", version_string);
-	printf ("\nVOBOT by Roger, V1.6 (dual)\n");
+	printf ("\nVOBOT by Roger, V1.7 (dual)\n");
 	return (0);
 }
 
@@ -1247,7 +1247,7 @@ int check_image_validation(void)
 				//printf("rootfs len: 0x%X chksum: 0x%X\n", rootfs_size, rootfs_chksum);
 				if (rootfs_chksum != squashfs_chksum) {
 					broken1 = 1;
-					printf("Failed (rootfs_chksum=0x%X vs. squashfs_chksum=0x%X)\n", rootfs_chksum, squashfs_chksum);
+					printf("Failed (size=0x%X current chksum=0x%X vs. should be=0x%X)\n", rootfs_size, rootfs_chksum, squashfs_chksum);
 				} else
 					printf("OK\n");
 			}
@@ -1300,7 +1300,7 @@ int check_image_validation(void)
 			printf("\nImage1 is broken, but Image2 size(0x%X) is too big(limit=0x%X)!!\
 				\nGive up copying image.\n", len, CFG_KERN_SIZE);
 		else {
-			printf("Image1 is borken. Copy Image2 to Image1\n");
+			printf("Image1 is broken. Copy Image2 to Image1\n");
 #ifdef RECOVERY_IMAGE_SUPPORT
 			printf("kernel size: %X, however, we copy rootfs as well, total = (%X)", len, CFG_KERN2_SIZE);
 			len = CFG_KERN2_SIZE;
